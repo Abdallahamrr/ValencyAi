@@ -4,7 +4,9 @@ import '../pages/Dashboard.css';
 
 export default function CreateAssignmentModal({ isOpen, onClose, classId, onAssignmentCreated }) {
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [totalMarks, setTotalMarks] = useState('');
+  const [dueDate, setdueDate] = useState(null);
   const [questionFile, setQuestionFile] = useState(null);
   const [markingSchemeFile, setMarkingSchemeFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,7 @@ export default function CreateAssignmentModal({ isOpen, onClose, classId, onAssi
       const uploadPDF = async (file, bucketName) => {
         const fileExt = file.name.split('.').pop();
         const fileName = `${classId}/${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from(bucketName)
           .upload(fileName, file);
@@ -37,7 +39,7 @@ export default function CreateAssignmentModal({ isOpen, onClose, classId, onAssi
         const { data: { publicUrl } } = supabase.storage
           .from(bucketName)
           .getPublicUrl(fileName);
-          
+
         return publicUrl;
       };
 
@@ -52,9 +54,11 @@ export default function CreateAssignmentModal({ isOpen, onClose, classId, onAssi
           {
             class_id: classId,
             title: title,
-            total_marks: parseInt(totalMarks),
-            marking_scheme_url: markingSchemeUrl,
-            question_pdf_url: questionPdfUrl
+            description: description,
+            total_max_marks: parseInt(totalMarks),
+            mark_scheme_url: markingSchemeUrl,
+            question_pdf_url: questionPdfUrl,
+            due_date: dueDate
           }
         ])
         .select();
@@ -63,6 +67,7 @@ export default function CreateAssignmentModal({ isOpen, onClose, classId, onAssi
 
       // Success
       setTitle('');
+      setDescription('');
       setTotalMarks('');
       setQuestionFile(null);
       setMarkingSchemeFile(null);
@@ -89,20 +94,34 @@ export default function CreateAssignmentModal({ isOpen, onClose, classId, onAssi
           <h3 className="card-title">Create Assignment</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
         </div>
-        
+
         {error && <div style={{ color: '#d97706', marginBottom: '16px', fontSize: '0.9rem' }}>{error}</div>}
 
         <form onSubmit={handleCreateAssignment}>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#1e293b' }}>Title</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
               placeholder="e.g. Midterm Test 1"
               style={{
-                width: '100%', padding: '12px', borderRadius: '8px', 
+                width: '100%', padding: '12px', borderRadius: '8px',
+                border: '1px solid #cbd5e1', fontSize: '1rem', boxSizing: 'border-box'
+              }}
+            />
+          </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#1e293b' }}>Desciription</label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+              placeholder="e.g. Midterm Test 1"
+              style={{
+                width: '100%', padding: '12px', borderRadius: '8px',
                 border: '1px solid #cbd5e1', fontSize: '1rem', boxSizing: 'border-box'
               }}
             />
@@ -110,15 +129,15 @@ export default function CreateAssignmentModal({ isOpen, onClose, classId, onAssi
 
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#1e293b' }}>Total Marks</label>
-            <input 
-              type="number" 
+            <input
+              type="number"
               value={totalMarks}
               onChange={(e) => setTotalMarks(e.target.value)}
               required
               min="1"
               placeholder="e.g. 50"
               style={{
-                width: '100%', padding: '12px', borderRadius: '8px', 
+                width: '100%', padding: '12px', borderRadius: '8px',
                 border: '1px solid #cbd5e1', fontSize: '1rem', boxSizing: 'border-box'
               }}
             />
@@ -126,13 +145,13 @@ export default function CreateAssignmentModal({ isOpen, onClose, classId, onAssi
 
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#1e293b' }}>Questions (PDF) - Visible to Students</label>
-            <input 
-              type="file" 
+            <input
+              type="file"
               accept=".pdf"
               onChange={(e) => setQuestionFile(e.target.files[0])}
               required
               style={{
-                width: '100%', padding: '12px', borderRadius: '8px', 
+                width: '100%', padding: '12px', borderRadius: '8px',
                 border: '1px dashed #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box',
                 background: '#f8fafc', color: '#64748b'
               }}
@@ -141,19 +160,40 @@ export default function CreateAssignmentModal({ isOpen, onClose, classId, onAssi
 
           <div style={{ marginBottom: '24px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#1e293b' }}>Marking Scheme (PDF) - Hidden from Students</label>
-            <input 
-              type="file" 
+            <input
+              type="file"
               accept=".pdf"
               onChange={(e) => setMarkingSchemeFile(e.target.files[0])}
               required
               style={{
-                width: '100%', padding: '12px', borderRadius: '8px', 
+                width: '100%', padding: '12px', borderRadius: '8px',
                 border: '1px dashed #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box',
                 background: '#f8fafc', color: '#64748b'
               }}
             />
           </div>
-          
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#1e293b' }}>
+              Due Date & Time
+            </label>
+            <input
+              type="datetime-local" // Changed from "date"
+              value={dueDate}
+              onClick={(e) => e.target.showPicker()}
+              onChange={(e) => setdueDate(e.target.value)}
+              required
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                fontSize: '1rem',
+                boxSizing: 'border-box',
+                }}
+            />
+          </div>
+
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <button type="button" className="action-btn secondary" style={{ width: 'auto' }} onClick={onClose}>
               Cancel
