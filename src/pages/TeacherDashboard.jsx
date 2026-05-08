@@ -46,10 +46,10 @@ export default function TeacherDashboard() {
 
       setProfile(profileData);
 
-      // Fetch classes for this teacher
+      // Fetch classes for this teacher with assignments
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
-        .select('*')
+        .select('*, assignments(*)')
         .eq('teacher_id', session.user.id);
 
       if (!classesError && classesData) {
@@ -68,7 +68,7 @@ export default function TeacherDashboard() {
   };
 
   const handleClassCreated = (newClass) => {
-    setClasses(prev => [...prev, newClass]);
+    setClasses(prev => [...prev, { ...newClass, assignments: [] }]);
   };
 
   const openCreateAssignment = (classId) => {
@@ -77,7 +77,12 @@ export default function TeacherDashboard() {
   };
 
   const handleAssignmentCreated = (newAssignment) => {
-    alert(`Assignment "${newAssignment.title}" created successfully!`);
+    setClasses(prev => prev.map(cls => 
+      cls.id === newAssignment.class_id 
+        ? { ...cls, assignments: [...(cls.assignments || []), newAssignment] }
+        : cls
+    ));
+    setIsAssignmentModalOpen(false);
   };
 
   if (loading) return <div className="dashboard-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}><p>Loading ValencyAi...</p></div>;
@@ -125,6 +130,35 @@ export default function TeacherDashboard() {
             <div className="card-body">
               <p style={{ marginBottom: '12px' }}><strong>0</strong> Students Enrolled</p>
               
+              {/* Assignments List */}
+              <div className="assignments-section" style={{ marginTop: '16px', marginBottom: '20px' }}>
+                <h4 style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assignments</h4>
+                <div className="assignments-stack" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {cls.assignments && cls.assignments.length > 0 ? (
+                    cls.assignments.map(asg => (
+                      <div key={asg.id} className="assignment-item" style={{ 
+                        padding: '10px 14px', 
+                        background: 'rgba(255, 255, 255, 0.5)', 
+                        borderRadius: '10px',
+                        border: '1px solid rgba(226, 232, 240, 0.8)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{asg.title}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                          {asg.due_date ? new Date(asg.due_date).toLocaleDateString() : 'No deadline'}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
+                      No assignments created.
+                    </p>
+                  )}
+                </div>
+              </div>
+
               {/* Progress Bar for Grading Status */}
               <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{ width: `0%`, height: '100%', background: '#1000f3', transition: 'width 0.5s ease' }}></div>

@@ -1,5 +1,26 @@
-/* src/pages/Auth.css */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+/* ── Auth Page Styling ─────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --auth-bg:         #020617;
+  --auth-bg-darker:  #010409;
+  --auth-surface:    #0f172a;
+  --auth-surface-light: #1e293b;
+  --auth-border:     rgba(255, 255, 255, 0.08);
+  --auth-border-glow: rgba(124, 58, 237, 0.3);
+  
+  --auth-primary:    #7C3AED;
+  --auth-primary-light: #A78BFA;
+  --auth-primary-glow: rgba(124, 58, 237, 0.4);
+  
+  --auth-text:       #f8fafc;
+  --auth-text-dim:   #94a3b8;
+  --auth-text-muted: #64748b;
+
+  --auth-font-main:  'Inter', -apple-system, sans-serif;
+  --auth-radius:     12px;
+  --auth-radius-lg:  24px;
+}
 
 .auth-container {
   min-height: 100vh;
@@ -7,172 +28,374 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* Deep, sophisticated mesh gradient */
-  background-color: #ffffff;
-  background-image: 
-    radial-gradient(at 0% 0%, rgb(229, 243, 255) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(210, 100%, 98%, 1) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, hsla(0, 0%, 95%, 1) 0px, transparent 50%);
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--auth-bg);
+  color: var(--auth-text);
+  font-family: var(--auth-font-main);
+  position: relative;
+  overflow: hidden;
   padding: 20px;
 }
 
+/* Faint Grid Background */
+.auth-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
 .auth-header {
-  text-align: center;
-  margin-bottom: 50px;
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0;
 }
 
 .auth-header h1 {
-  font-size: 3.2rem;
-  font-weight: 800;
-  letter-spacing: -1.5px;
-  margin-bottom: 8px;
-  color: #111;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0;
+  color: white;
 }
 
-/* Make the 'Ai' in ValencyAi red */
+.logo-v-box {
+  width: 24px;
+  height: 24px;
+  background: var(--auth-primary);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: white;
+}
+
 .auth-header h1 span {
-  color: #0e00cc;
+  color: var(--auth-primary-light);
+  background: none;
+  -webkit-text-fill-color: initial;
 }
 
 .auth-subtitle {
-  color: #5f5f5f;
-  font-size: 1.1rem;
-  font-weight: 500;
+  display: none; /* Removed as per new design */
 }
 
-.cards-wrapper {
-  display: flex;
-  gap: 32px;
-  justify-content: center;
-  flex-wrap: wrap;
+/* Centered Main Card */
+.auth-card-main {
   width: 100%;
-  max-width: 900px;
+  max-width: 480px;
+  background: var(--auth-bg-darker);
+  border: 1px solid var(--auth-border);
+  border-radius: var(--auth-radius-lg);
+  padding: 48px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  
+  /* Animation */
+  animation: authFadeIn 1s ease-out;
 }
 
-/* The RoleCard - Glassmorphism & Depth */
-.role-card {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 24px;
-  padding: 48px 36px;
-  width: 380px;
-  /* Soft but deep multi-layered shadow */
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 20px 40px -5px rgba(0, 0, 0, 0.08);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+@keyframes authFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-card-main h2 {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+  color: white;
+}
+
+.auth-card-main .subheading {
+  color: var(--auth-text-dim);
+  font-size: 15px;
+  margin-bottom: 40px;
+}
+
+/* Role Selector */
+.role-selection-label {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--auth-text-muted);
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.role-selector-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.role-option {
+  background: var(--auth-surface);
+  border: 1px solid var(--auth-border);
+  padding: 20px;
+  border-radius: var(--auth-radius);
+  cursor: pointer;
+  transition: all 0.2s;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
+  align-items: center;
+  gap: 8px;
+  position: relative;
 }
 
-.role-card:hover {
-  transform: translateY(-12px);
-  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.15);
-  border-color: rgba(11, 0, 172, 0.2);
+.role-option.active {
+  border-color: var(--auth-primary);
+  background: rgba(124, 58, 237, 0.05);
 }
 
-.role-card h2 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin-bottom: 12px;
-  color: #1000f3;
+.role-option .check-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  background: var(--auth-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-.role-description {
-  color: #6b7280;
-  font-size: 1rem;
-  line-height: 1.6;
-  margin-bottom: 32px;
-  height: 80px;
+.role-option.active .check-icon {
+  opacity: 1;
 }
 
-/* Inputs & Buttons */
-.auth-input {
-  width: 100%;
-  padding: 16px;
-  margin-bottom: 12px;
-  border: 2px solid #f3f4f6;
-  border-radius: 14px;
-  font-size: 1rem;
-  font-family: inherit;
-  transition: all 0.2s;
-  background: #f9fafb;
+.role-option-icon {
+  font-size: 20px;
+  color: var(--auth-text-dim);
 }
 
-.auth-input:focus {
-  outline: none;
-  background: #fff;
-  border-color: #0300ce;
-  box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.05);
+.role-option.active .role-option-icon {
+  color: var(--auth-primary-light);
 }
 
+.role-option span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--auth-text-dim);
+}
+
+.role-option.active span {
+  color: var(--auth-text);
+}
+
+/* Form Elements */
 .google-btn {
   width: 100%;
-  padding: 16px;
-  background: #fff;
-  border: 2px solid #f3f4f6;
-  border-radius: 14px;
+  height: 52px;
+  background: #ffffff;
+  color: #000000;
+  border-radius: var(--auth-radius);
   font-weight: 600;
-  font-size: 0.95rem;
-  color: #374151;
-  cursor: pointer;
+  font-size: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  transition: all 0.2s;
+  margin-bottom: 24px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s;
 }
 
 .google-btn:hover {
-  border-color: #d1d5db;
-  background: #1200b6;
-  color: #ffffff;
+  transform: translateY(-1px);
+  background: #f1f1f1;
 }
 
 .divider {
-  margin: 24px 0;
-  position: relative;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--auth-text-muted);
+  font-size: 12px;
+  margin: 32px 0;
 }
 
-.divider::before {
+.divider::before, .divider::after {
   content: "";
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
   height: 1px;
-  background: #f3f4f6;
-  z-index: 1;
+  flex: 1;
+  background: var(--auth-border);
 }
 
-.divider span {
-  position: relative;
-  z-index: 2;
-  background: #fff;
-  padding: 0 12px;
-  color: #9ca3af;
-  font-size: 0.75rem;
+.form-field {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.form-field label {
+  font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
+  color: var(--auth-text-muted);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--auth-text-muted);
+}
+
+.auth-input {
+  width: 100%;
+  height: 52px;
+  background: var(--auth-surface);
+  border: 1px solid var(--auth-border);
+  border-radius: var(--auth-radius);
+  padding: 0 16px 0 44px;
+  color: var(--auth-text);
+  font-size: 15px;
+  transition: all 0.2s;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: var(--auth-primary);
+  background: var(--auth-surface-light);
+}
+
+.notice-box {
+  background: rgba(124, 58, 237, 0.05);
+  border: 1px solid var(--auth-border);
+  border-radius: var(--auth-radius);
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  text-align: left;
+  margin-bottom: 32px;
+}
+
+.notice-icon {
+  color: var(--auth-primary-light);
+  font-size: 16px;
+}
+
+.notice-box p {
+  font-size: 13px;
+  color: var(--auth-text-dim);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.notice-box strong {
+  color: var(--auth-text);
 }
 
 .magic-btn {
   width: 100%;
-  padding: 16px;
-  background: #111;
+  height: 52px;
+  background: var(--auth-primary);
   color: white;
-  border: none;
-  border-radius: 14px;
+  border-radius: var(--auth-radius);
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 16px;
+  border: none;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   transition: all 0.2s;
 }
 
 .magic-btn:hover {
-  background: #1500d3; /* Swaps to brand color on hover */
-  transform: scale(1.02);
+  background: #6D28D9;
+  transform: translateY(-1px);
+}
+
+.magic-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auth-footer {
+  margin-top: 32px;
+  font-size: 14px;
+  color: var(--auth-text-muted);
+}
+
+.auth-footer a {
+  color: var(--auth-primary-light);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+/* SUCCESS STATE */
+.success-state {
+  text-align: center;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 24px;
+}
+
+.success-state h3 {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.success-state p {
+  color: var(--auth-text-dim);
+  margin-bottom: 32px;
+}
+
+/* Replit Badge */
+.replit-badge {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--auth-text-dim);
+  padding: 6px 16px;
+  border-radius: 100px;
+  font-size: 12px;
+  border: 1px solid var(--auth-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }

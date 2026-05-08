@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import RoleCard from '../components/RoleCard';
 
-export default function Auth() {
+export default function SignIn() {
   const navigate = useNavigate();
   const [activeRole, setActiveRole] = useState('student');
   const [emails, setEmails] = useState({ teacher: '', student: '' });
@@ -61,10 +61,10 @@ export default function Auth() {
       </div>
 
       <div className="auth-card-main">
-        <h2>Create your account</h2>
-        <p className="subheading">Join Valency.Ai — precision grading for IGCSE</p>
+        <h2>Welcome Back 🔑</h2>
+        <p className="subheading">Sign in to your Valency.Ai account</p>
 
-        <span className="role-selection-label">I AM JOINING AS A...</span>
+        <span className="role-selection-label">SIGN IN AS...</span>
         <div className="role-selector-group">
           <div 
             className={`role-option ${activeRole === 'student' ? 'active' : ''}`}
@@ -84,12 +84,11 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Instead of mapping both, we show the active one */}
         <RoleCard 
           role={activeRole}
           description={activeRole === 'teacher' ? 
-            "Create classes, upload marking schemes, and grade IGCSE papers." : 
-            "Join classes, submit assignments, and get instant feedback."}
+            "Access your classes and grade assignments." : 
+            "Submit assignments and view your grades."}
           email={emails[activeRole]}
           setEmail={(val) => handleEmailChange(activeRole, val)}
           error={activeRole === 'teacher' ? teacherError : studentError}
@@ -99,10 +98,11 @@ export default function Auth() {
           loading={loading}
           handleGoogleLogin={handleGoogleLogin}
           handleMagicLink={handleMagicLink}
+          mode="signin"
         />
 
         <div className="auth-footer">
-          Already have an account? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/signin'); }}>Sign in</a>
+          Don't have an account? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/auth'); }}>Sign up</a>
         </div>
       </div>
 
