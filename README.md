@@ -123,7 +123,7 @@ It is not a university assignment — it is intended for real classroom use.
 
 ## Author
 
-Built by [Your Name] — Software Engineering student, 6th semester.
+Built by Abdallah Amr Saleh — Software Engineering student, 6th semester.
 Open to feedback, collaboration, and beta teacher partnerships.
 
-[your email] · [your linkedin]
+abdallahh.amr2005@gmail.com · https://www.linkedin.com/in/abdallah-amr-28076a274/
