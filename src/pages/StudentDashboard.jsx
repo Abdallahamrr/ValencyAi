@@ -182,7 +182,7 @@ export default function StudentDashboard() {
 
         <nav className="sd-nav">
           <Link to="/student-dashboard" className="sd-nav-item active"><i>📊</i> Dashboard</Link>
-          <Link to="#" className="sd-nav-item"><i>📚</i> Classes</Link>
+          <Link to="/student-classes" className="sd-nav-item"><i>📚</i> Classes</Link>
           <Link to="#" className="sd-nav-item"><i>📤</i> Submissions</Link>
           <Link to="#" className="sd-nav-item"><i>📈</i> Analytics</Link>
         </nav>
