@@ -45,7 +45,7 @@ export default function LandingPage() {
             <path d="M4 22L16 28L28 22" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M4 16L16 22L28 16" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="logo-text">Valency.Ai</span>
+          <span className="logo-text">Valencyyy.Ai</span>
         </div>
         <div className="lp-nav-links">
           <a href="#features">Features</a>
