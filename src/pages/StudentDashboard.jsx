@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import './StudentDashboard.css'; 
-import ReviewUI from '../components/ReviewUI';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -12,16 +11,12 @@ export default function StudentDashboard() {
   // State for Joining Classes
   const [inviteCode, setInviteCode] = useState('');
   const [joining, setJoining] = useState(false);
-  const [joinError, setJoinError] = useState(null);
-  const [joinSuccess, setJoinSuccess] = useState(false);
   
   // Data State
   const [enrolledClasses, setEnrolledClasses] = useState([]);
   const [submissions, setSubmissions] = useState([]);
-  
-  // UI State
-  const [isReviewing, setIsReviewing] = useState(false);
-  const [reviewSegments, setReviewSegments] = useState([]);
+  const [uploadingAsgId, setUploadingAsgId] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Fetch Data
   const fetchData = async (studentId) => {
@@ -83,51 +78,38 @@ export default function StudentDashboard() {
     navigate('/');
   };
 
-  const handleJoinClass = async () => {
-    if (!inviteCode || inviteCode.length < 6) return;
-    setJoining(true);
-    setJoinError(null);
-    setJoinSuccess(false);
-
-    try {
-      const { data: classData, error: classError } = await supabase
-        .from('classes')
-        .select('id')
-        .eq('invite_code', inviteCode)
-        .single();
-
-      if (classError || !classData) throw new Error('Invalid class code.');
-
-      const { error: enrollError } = await supabase
-        .from('class_enrollments')
-        .insert({ student_id: profile.id, class_id: classData.id });
-
-      if (enrollError) {
-        if (enrollError.code === '23505') throw new Error('Already enrolled.');
-        throw enrollError;
-      }
-
-      setJoinSuccess(true);
-      setInviteCode('');
-      await fetchData(profile.id);
-
-    } catch (err) {
-      setJoinError(err.message);
-    } finally {
-      setJoining(false);
-    }
-  };
-
   const handleFileUpload = async (e, assignmentId) => {
     const file = e.target.files[0];
     if (!file) return;
-    setLoading(true);
+    
+    setUploadingAsgId(assignmentId);
+    setUploadProgress(1);
+
+    let currentProgress = 1;
+    const simulationInterval = setInterval(() => {
+      if (currentProgress < 92) {
+        currentProgress += Math.random() * 3;
+        setUploadProgress(Math.floor(currentProgress));
+      }
+    }, 600);
+
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${profile.id}/${assignmentId}_${Date.now()}.${fileExt}`;
+      
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('student-submissions')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          onUploadProgress: (evt) => {
+            if (evt.total) {
+              const realPercent = Math.round((evt.loaded / evt.total) * 100);
+              if (realPercent > currentProgress) {
+                currentProgress = realPercent;
+                setUploadProgress(realPercent);
+              }
+            }
+          }
+        });
 
       if (uploadError) throw uploadError;
 
@@ -142,37 +124,55 @@ export default function StudentDashboard() {
         status: 'pending'
       });
 
-      alert("Submission successful!");
-      await fetchData(profile.id);
+      setUploadProgress(100);
+      clearInterval(simulationInterval);
+      
+      setTimeout(async () => {
+        await fetchData(profile.id);
+        setUploadingAsgId(null);
+        setUploadProgress(0);
+      }, 800);
+
     } catch (err) {
+      clearInterval(simulationInterval);
       alert("Upload error: " + err.message);
-    } finally {
-      setLoading(false);
+      setUploadingAsgId(null);
+      setUploadProgress(0);
     }
   };
 
-  // Derive Stats
-  const totalAssignments = enrolledClasses.reduce((acc, cls) => acc + (cls.assignments?.length || 0), 0);
-  const totalSubmitted = submissions.length;
-  const completionRate = totalAssignments > 0 ? Math.round((totalSubmitted / totalAssignments) * 100) : 0;
+  // Stats Logic
+  const pendingAssignments = enrolledClasses.reduce((acc, cls) => {
+    const classAsgs = cls.assignments || [];
+    const unsubmitted = classAsgs.filter(asg => !submissions.find(s => s.assignment_id === asg.id));
+    return acc + unsubmitted.length;
+  }, 0);
+
+  const toVerify = submissions.filter(s => s.status === 'ocr-pending').length;
   
   const gradedSubmissions = submissions.filter(s => s.status === 'graded');
   const avgScore = gradedSubmissions.length > 0 
     ? Math.round(gradedSubmissions.reduce((acc, s) => acc + (s.final_score || 0), 0) / gradedSubmissions.length)
     : 0;
 
-  // Mock "Next Deadline"
-  const nextDeadline = "14 Hours Left";
+  // Flattened assignments for upcoming deadlines
+  const allAssignments = enrolledClasses.flatMap(cls => 
+    (cls.assignments || []).map(asg => ({ ...asg, className: cls.name }))
+  ).filter(asg => !submissions.find(s => s.assignment_id === asg.id))
+   .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+   .slice(0, 4);
 
-  if (loading) return <div className="sd-layout" style={{ justifyContent: 'center', alignItems: 'center' }}>Loading Valency.Ai...</div>;
+  // Removed blocking loading screen for professional instant transition
 
   return (
     <div className="sd-layout">
+      {/* ── BACKGROUND DESIGN ── */}
+      <div className="bg-grid"></div>
+
       {/* ── SIDEBAR ── */}
       <aside className="sd-sidebar">
-        <div className="sd-sidebar-logo">
-           <div className="logo-v-box">V</div>
-           <h1 style={{ color: 'white' }}>Valency.Ai</h1>
+        <div className="sd-sidebar-logo" onClick={() => navigate('/student-dashboard')} style={{ cursor: 'pointer' }}>
+           <img src="/logo-light.svg" alt="Valency.Ai" style={{ width: '100%', maxWidth: '220px', height: 'auto', display: 'block' }} />
         </div>
 
         <div className="sd-user-card">
@@ -182,9 +182,9 @@ export default function StudentDashboard() {
 
         <nav className="sd-nav">
           <Link to="/student-dashboard" className="sd-nav-item active"><i>📊</i> Dashboard</Link>
-          <Link to="/student-classes" className="sd-nav-item"><i>📚</i> Classes</Link>
-          <Link to="#" className="sd-nav-item"><i>📤</i> Submissions</Link>
-          <Link to="#" className="sd-nav-item"><i>📈</i> Analytics</Link>
+          <Link to="/student-classes" className="sd-nav-item"><i>📚</i> My Classes</Link>
+          <Link to="#" className="sd-nav-item"><i>🔍</i> OCR Verification</Link>
+          <Link to="#" className="sd-nav-item"><i>📝</i> My Grades</Link>
         </nav>
 
         <div className="sd-sidebar-footer">
@@ -194,143 +194,115 @@ export default function StudentDashboard() {
 
       {/* ── MAIN CONTENT ── */}
       <main className="sd-main">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <header className="sd-header">
-            <h2>Welcome back, {profile?.full_name?.split(' ')[0]}.</h2>
-            <p>You have {totalAssignments - totalSubmitted} active assignments pending for this week.</p>
-          </header>
+        <header className="sd-header">
+          <h2>Dashboard</h2>
+          <p>Welcome back, {profile?.full_name?.split(' ')[0]}. Here is your academic overview.</p>
+        </header>
 
-          {/* Join Class (Top Right) */}
-          <div className="sd-side-card" style={{ width: '320px', padding: '16px', marginBottom: 0 }}>
-            <h4 style={{ marginBottom: '12px' }}><i>🎓</i> Join New Class</h4>
-            <div className="sd-join-form">
-              <input className="sd-join-input" placeholder="Class Code" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} maxLength={6} />
-              <button className="sd-join-btn" onClick={handleJoinClass}>Join</button>
+        {/* Action Banner */}
+        {toVerify > 0 && (
+          <div className="sd-action-banner">
+            <div className="sd-action-content">
+              <div className="sd-action-icon">⚠️</div>
+              <div className="sd-action-text">
+                <h4>Action Required: Verify OCR Results</h4>
+                <p>Valency.Ai has finished processing your recent submission. Please verify the AI's reading of your handwriting before it is submitted to your teacher.</p>
+              </div>
+            </div>
+            <button className="sd-action-btn">Verify Now →</button>
+          </div>
+        )}
+
+        {/* Stats Grid */}
+        <div className="sd-stats-grid">
+          <div className="sd-stat-card">
+            <div className="sd-stat-icon purple">📖</div>
+            <div className="sd-stat-info">
+              <span className="stat-label">Enrolled Classes</span>
+              <span className="stat-value">{enrolledClasses.length}</span>
+            </div>
+          </div>
+          <div className="sd-stat-card">
+            <div className="sd-stat-icon blue">📄</div>
+            <div className="sd-stat-info">
+              <span className="stat-label">Pending Assignments</span>
+              <span className="stat-value">{pendingAssignments}</span>
+            </div>
+          </div>
+          <div className="sd-stat-card">
+            <div className="sd-stat-icon yellow">🕒</div>
+            <div className="sd-stat-info">
+              <span className="stat-label">To Verify</span>
+              <span className="stat-value">{toVerify}</span>
+            </div>
+          </div>
+          <div className="sd-stat-card">
+            <div className="sd-stat-icon green">📈</div>
+            <div className="sd-stat-info">
+              <span className="stat-label">Recent Average</span>
+              <span className="stat-value">{avgScore}%</span>
             </div>
           </div>
         </div>
 
-        {/* Stats Grid (3 columns as per feature image) */}
-        <div className="sd-stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginTop: '32px' }}>
-          <div className="sd-stat-card">
-            <div className="sd-stat-info" style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="label">AVERAGE GRADE</span>
-                <i style={{ color: '#10b981' }}>📈</i>
-              </div>
-              <span className="value">{avgScore}.2%</span>
-              <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Top 15% of the class</p>
+        {/* Content Layout Grid */}
+        <div className="sd-dashboard-grid">
+          {/* Upcoming Deadlines */}
+          <div className="sd-glass-card">
+            <div className="sd-card-header">
+              <i>🕒</i>
+              <h3>Upcoming Deadlines</h3>
+            </div>
+            <div className="sd-deadline-list">
+              {allAssignments.length > 0 ? allAssignments.map(asg => (
+                <div className="sd-deadline-item" key={asg.id}>
+                  <div className="sd-deadline-info">
+                    <h4>{asg.title}</h4>
+                    <p>{asg.className}</p>
+                  </div>
+                  <div className="sd-deadline-tag">
+                    {new Date(asg.due_date).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              )) : (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                  No upcoming deadlines. You're all caught up!
+                </div>
+              )}
             </div>
           </div>
-          <div className="sd-stat-card">
-            <div className="sd-stat-info" style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="label">COMPLETION RATE</span>
-                <i style={{ color: '#3b82f6' }}>✔️</i>
-              </div>
-              <span className="value">{completionRate}%</span>
-              <div className="sd-progress-container">
-                <div className="sd-progress-bar" style={{ width: `${completionRate}%` }}></div>
-              </div>
-            </div>
-          </div>
-          <div className="sd-stat-card">
-            <div className="sd-stat-info" style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="label">NEXT DEADLINE</span>
-                <i style={{ color: '#ef4444' }}>🕒</i>
-              </div>
-              <span className="value">{nextDeadline}</span>
-              <p style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600, marginTop: '4px' }}>Urgent: Physics Lab Report</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Content Layout */}
-        <section style={{ marginTop: '48px' }}>
-          <div className="sd-section-header">
-            <h3>Active Assignments</h3>
-            <Link to="#" className="sd-view-all">View All</Link>
-          </div>
-          
-          <div className="sd-assignments-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-            {enrolledClasses.map(cls => 
-              cls.assignments?.map((asg, idx) => {
-                const submission = submissions.find(s => s.assignment_id === asg.id);
-                // Cycle through colors/subjects for demo
-                const subjects = ['PHYSICS', 'MATH', 'CHEMISTRY'];
-                const sub = subjects[idx % 3];
-                const bgColors = ['#e0f2fe', '#fef3c7', '#dcfce7'];
-                
+          {/* Recently Returned Grades */}
+          <div className="sd-glass-card">
+            <div className="sd-card-header">
+              <i>✔️</i>
+              <h3>Recently Returned Grades</h3>
+            </div>
+            <div className="sd-grade-list">
+              {gradedSubmissions.length > 0 ? gradedSubmissions.map(sub => {
+                const asg = enrolledClasses.flatMap(c => c.assignments).find(a => a.id === sub.assignment_id);
+                const className = enrolledClasses.find(c => c.assignments.find(a => a.id === sub.assignment_id))?.name;
                 return (
-                  <div className="sd-asg-card" key={asg.id}>
-                    <div className="sd-asg-img" style={{ background: bgColors[idx % 3] }}>
-                      <span className="sd-asg-tag" style={{ color: '#1e293b' }}>{sub}</span>
+                  <div className="sd-grade-item" key={sub.id}>
+                    <div className="sd-grade-info">
+                      <h4>{asg?.title || 'Assignment'}</h4>
+                      <p>{className || 'Subject'}</p>
                     </div>
-                    <div className="sd-asg-content">
-                      <h4>{asg.title}</h4>
-                      <p>{asg.description || "Complete the simulation and data analysis for the double-slit..."}</p>
-                      
-                      <div className="sd-asg-footer" style={{ border: 'none', padding: 0 }}>
-                        <span className="sd-asg-date">📅 {new Date(asg.created_at || Date.now()).toLocaleDateString()}</span>
-                        <span className={`sd-asg-status ${
-                          submission?.status === 'graded' ? 'status-graded' : 
-                          submission?.status === 'pending' ? 'status-pending' : 'status-not-started'
-                        }`}>
-                          {submission ? (submission.status === 'graded' ? 'Graded' : 'Pending') : 'Not Started'}
-                        </span>
-                      </div>
-                      
-                      {!submission && (
-                        <div style={{ position: 'relative', marginTop: '16px' }}>
-                           <input type="file" accept=".pdf" onChange={(e) => handleFileUpload(e, asg.id)} style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
-                           <button className="sd-join-btn" style={{ width: '100%', background: 'transparent', color: '#7c3aed', border: '1px solid #7c3aed' }}>Upload PDF</button>
-                        </div>
-                      )}
+                    <div className="sd-grade-score">
+                      <span className="sd-grade-pct">{sub.final_score}%</span>
+                      <span className="sd-grade-fraction">{sub.marks_obtained || 0}/{asg?.total_max_marks || 100}</span>
                     </div>
+                    <Link to="#" className="sd-grade-view">View</Link>
                   </div>
                 );
-              })
-            )}
+              }) : (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                  No grades returned yet.
+                </div>
+              )}
+            </div>
           </div>
-        </section>
-
-        {/* Results Summary Table */}
-        <section style={{ marginTop: '48px' }}>
-           <div className="sd-results-card">
-              <div className="sd-table-header" style={{ background: '#f8fafc', color: '#1e293b', borderBottom: '1px solid #e2e8f0' }}>
-                <h3>Recent Results Summary</h3>
-              </div>
-              <table className="sd-table">
-                <thead>
-                  <tr>
-                    <th>SUBJECT</th>
-                    <th>ASSIGNMENT</th>
-                    <th>DATE</th>
-                    <th style={{ textAlign: 'right' }}>SCORE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { subject: 'Physics', asg: 'Newtonian Laws Quiz', date: '10/12/2023', score: '92/100' },
-                    { subject: 'Chemistry', asg: 'Valency Worksheets', date: '10/10/2023', score: '88/100' },
-                    { subject: 'Computer Science', asg: 'Python Algorithms', date: '10/08/2023', score: '100/100' },
-                    { subject: 'Math', asg: 'Trigonometry Basics', date: '10/05/2023', score: '76/100' }
-                  ].map((row, i) => (
-                    <tr key={i}>
-                      <td className="subject">{row.subject}</td>
-                      <td>{row.asg}</td>
-                      <td>{row.date}</td>
-                      <td className="score">{row.score}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="sd-table-footer" style={{ background: '#f8fafc' }}>
-                <Link to="#" className="sd-download-btn">Download Academic Transcript (PDF)</Link>
-              </div>
-           </div>
-        </section>
+        </div>
       </main>
     </div>
   );

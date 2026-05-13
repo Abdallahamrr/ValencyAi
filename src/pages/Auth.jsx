@@ -55,9 +55,8 @@ export default function Auth() {
   return (
     <div className="auth-container">
       {/* Header Logo */}
-      <div className="auth-header" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-        <div className="logo-v-box">V</div>
-        <h1>Valency<span>.Ai</span></h1>
+      <div className="auth-header" onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '40px' }}>
+        <img src="/logo-full.svg" alt="Valency.Ai" style={{ width: '320px', height: 'auto' }} />
       </div>
 
       <div className="auth-card-main">

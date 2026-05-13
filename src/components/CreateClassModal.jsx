@@ -55,44 +55,67 @@ export default function CreateClassModal({ isOpen, onClose, onClassCreated, teac
   };
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      display: 'flex', justifyContent: 'center', alignItems: 'center',
-      zIndex: 1000
-    }}>
-      <div className="glass-card" style={{ width: '400px', background: '#fff' }}>
-        <div className="card-header">
-          <h3 className="card-title">Create New Class</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
-        </div>
+    <div className="td-modal-overlay">
+      <div className="td-modal-content td-class-modal">
+        <header className="td-modal-header">
+          <div>
+            <span className="td-modal-eyebrow">New classroom</span>
+            <h2>Create New Class</h2>
+          </div>
+          <button className="td-modal-close" onClick={onClose}>&times;</button>
+        </header>
         
-        {error && <div style={{ color: '#d97706', marginBottom: '16px', fontSize: '0.9rem' }}>{error}</div>}
-
         <form onSubmit={handleCreateClass}>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#1e293b' }}>Class Name</label>
-            <input 
-              type="text" 
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-              required
-              placeholder="e.g. IGCSE Chemistry - Year 10"
-              style={{
-                width: '100%', padding: '12px', borderRadius: '8px', 
-                border: '1px solid #cbd5e1', fontSize: '1rem', boxSizing: 'border-box'
-              }}
-            />
+          <div className="td-modal-body">
+            {error && (
+              <div style={{ 
+                background: '#fff7ed', 
+                border: '1px solid #ffedd5', 
+                color: '#9a3412', 
+                padding: '12px 16px', 
+                borderRadius: '12px', 
+                marginBottom: '20px',
+                fontSize: '14px',
+                fontWeight: 500
+              }}>
+                ⚠️ {error}
+              </div>
+            )}
+
+            <div className="td-form-group">
+              <label className="td-form-label">Class Name</label>
+              <input 
+                type="text" 
+                className="td-form-input"
+                value={className}
+                onChange={(e) => setClassName(e.target.value)}
+                required
+                placeholder="e.g. IGCSE Chemistry - Year 10"
+              />
+              <p className="td-form-help">
+                We'll generate a unique invite code for your students automatically.
+              </p>
+            </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button type="button" className="action-btn secondary" style={{ width: 'auto' }} onClick={onClose}>
+          <footer className="td-modal-footer">
+            <button 
+              type="button" 
+              className="td-btn-secondary" 
+              style={{ width: 'auto' }} 
+              onClick={onClose}
+            >
               Cancel
             </button>
-            <button type="submit" className="action-btn" style={{ width: 'auto' }} disabled={loading}>
+            <button 
+              type="submit" 
+              className="td-btn-primary" 
+              style={{ width: 'auto', padding: '10px 24px' }} 
+              disabled={loading}
+            >
               {loading ? 'Creating...' : 'Create Class'}
             </button>
-          </div>
+          </footer>
         </form>
       </div>
     </div>

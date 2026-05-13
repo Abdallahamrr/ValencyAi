@@ -1,65 +1,58 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import './Dashboard.css';
 import CreateClassModal from '../components/CreateClassModal';
 import CreateAssignmentModal from '../components/CreateAssignmentModal';
+import './Dashboard.css';
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [classes, setClasses] = useState([]);
-
-  // Assignment Modal State
+  const [loading, setLoading] = useState(true);
+  
+  // Modals
+  const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState(null);
 
-  // Mock data for UI demonstration purposes based on the implementation plan
-  const stats = {
-    activeClasses: classes.length,
-    pendingSubmissions: 12,
-    papersGraded: 145
+  const fetchData = async (teacherId) => {
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select(`
+        *,
+        assignments (*)
+      `)
+      .eq('teacher_id', teacherId);
+    
+    if (!classError && classData) {
+      setClasses(classData);
+    }
   };
 
   useEffect(() => {
-    const fetchTeacherData = async () => {
+    const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate('/');
-        return;
-      }
+      if (!session) return navigate('/signin');
 
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
 
-      if (profileError || !profileData) {
-        console.error("Error fetching profile:", profileError);
+      if (error || !profileData) return setLoading(false);
+
+      if (!profileData.school_name || !profileData.grade_level) {
+        navigate('/complete-profile');
+      } else {
+        setProfile(profileData);
+        await fetchData(profileData.id);
         setLoading(false);
-        return;
       }
-
-      setProfile(profileData);
-
-      // Fetch classes for this teacher with assignments
-      const { data: classesData, error: classesError } = await supabase
-        .from('classes')
-        .select('*, assignments(*)')
-        .eq('teacher_id', session.user.id);
-
-      if (!classesError && classesData) {
-        setClasses(classesData);
-      }
-
-      setLoading(false);
     };
 
-    fetchTeacherData();
+    checkUser();
   }, [navigate]);
 
   const handleSignOut = async () => {
@@ -67,203 +60,222 @@ export default function TeacherDashboard() {
     navigate('/');
   };
 
-  const handleClassCreated = (newClass) => {
-    setClasses(prev => [...prev, { ...newClass, assignments: [] }]);
+  // Derive Stats and Content for Dashboard (matching the Vision)
+  const activeClasses = classes.length;
+  const [totalStudents, setTotalStudents] = useState(0);
+
+useEffect(() => {
+  const fetchCount = async () => {
+    // Only run if we actually have a teacher ID
+    if (!profile?.id) return;
+
+    const { data, error } = await supabase.rpc('get_teacher_student_count', { 
+      t_id: profile.id 
+    });
+
+    if (error) {
+      console.error('Error fetching student count:', error);
+    } else if (data && data.length > 0) {
+      // Access the count from the first row of the returned table
+      setTotalStudents(data[0].unique_student_count);
+    }
   };
 
-  const openCreateAssignment = (classId) => {
-    setSelectedClassId(classId);
-    setIsAssignmentModalOpen(true);
-  };
+  fetchCount();
+}, [profile?.id]); // Re-run if the profile ID changes
+  const gradingProgress = "-"; 
 
-  const handleAssignmentCreated = (newAssignment) => {
-    setClasses(prev => prev.map(cls => 
-      cls.id === newAssignment.class_id 
-        ? { ...cls, assignments: [...(cls.assignments || []), newAssignment] }
-        : cls
-    ));
-    setIsAssignmentModalOpen(false);
-  };
-
-  if (loading) return <div className="dashboard-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}><p>Loading ValencyAi...</p></div>;
+  // Flattened assignments for "Upcoming Deadlines"
+  const upcomingAssignments = classes.flatMap(cls => 
+    (cls.assignments || []).map(asg => ({ ...asg, className: cls.name }))
+  ).sort((a, b) => new Date(a.due_date) - new Date(b.due_date)).slice(0, 5);
 
   return (
     <div className="td-layout">
+      {/* ── BACKGROUND DESIGN ── */}
+      <div className="bg-grid"></div>
+
       {/* ── SIDEBAR ── */}
       <aside className="td-sidebar">
-        <div className="td-sidebar-logo">
-           <div className="logo-v-box">V</div>
-           <h1 className="logo-text">Valency.Ai</h1>
+        <div className="td-sidebar-logo" onClick={() => navigate('/teacher-dashboard')}>
+          <img src="/logo-light.svg" alt="Valency.Ai" style={{ width: '100%', maxWidth: '220px', height: 'auto', display: 'block' }} />
+        </div>
+
+        <div className="td-user-info">
+          <span className="role">Teacher</span>
+          <span className="name">{profile?.full_name}</span>
         </div>
 
         <nav className="td-nav">
-          <Link to="/teacher-dashboard" className="td-nav-item active">
-            <span className="icon">📊</span> Dashboard
-          </Link>
-          <div className="td-nav-item">
-            <span className="icon">📚</span> My Classes
-          </div>
-          <div className="td-nav-item">
-            <span className="icon">📄</span> Assignments
-          </div>
-          <div className="td-nav-item">
-            <span className="icon">📈</span> Reports
-          </div>
-          <div className="td-nav-item">
-            <span className="icon">⚙️</span> Settings
-          </div>
+          <Link to="/teacher-dashboard" className="td-nav-item active"><i>📊</i> Dashboard</Link>
+          <Link to="/teacher-classes" className="td-nav-item"><i>📚</i> My Classes</Link>
+          <Link to="#" className="td-nav-item"><i>🔍</i> OCR Verification</Link>
+          <Link to="#" className="td-nav-item"><i>📈</i> My Grades</Link>
         </nav>
 
         <div className="td-sidebar-footer">
-          <div className="td-logout" onClick={handleSignOut}>
-            <span className="icon">🚪</span> Logout
-          </div>
+          <div className="td-logout" onClick={handleSignOut}><i>🚪</i> Sign out</div>
         </div>
       </aside>
 
-      {/* ── MAIN AREA ── */}
-      <div className="td-main-wrapper">
-        {/* ── TOP NAV ── */}
-        <header className="td-top-nav">
-          <div className="td-search">
-            <span className="search-icon">🔍</span>
-            <input type="text" placeholder="Search classes or students..." />
+      {/* ── MAIN CONTENT ── */}
+      <main className="td-main">
+        <header className="td-header">
+          <div className="td-header-text">
+            <h2>Dashboard</h2>
+            <p>Welcome back, {profile?.full_name?.split(' ')[0]}. Here is your academic overview.</p>
           </div>
-          
-          <div className="td-top-actions">
-            <button className="td-btn-notification">
-              <span className="icon">🔔</span>
-              <span className="dot"></span>
-            </button>
-            <div className="td-profile-pill">
-              <div className="profile-info">
-                <span className="name">{profile?.full_name || 'Teacher'}</span>
-                <span className="role">Administrator</span>
-              </div>
-              <div className="avatar">
-                {profile?.full_name?.charAt(0) || 'T'}
-              </div>
-            </div>
-          </div>
+          <button className="td-create-btn" onClick={() => setIsClassModalOpen(true)}>
+            <span>+</span> Create New Class
+          </button>
         </header>
 
-        {/* ── CONTENT ── */}
-        <main className="td-content">
-          <header className="td-content-header">
-            <div className="header-text">
-              <h1>Dashboard Overview</h1>
-              <p>Welcome back! Here's what's happening with your classes today.</p>
-            </div>
-            <button className="td-btn-primary" onClick={() => setIsClassModalOpen(true)}>
-              + Create New Class
-            </button>
-          </header>
-
-          <div className="td-stats-grid">
-            <div className="td-stat-card">
-              <div className="stat-header">
-                <span className="stat-label">Active Classes</span>
-                <span className="stat-icon-bg purple">📚</span>
-              </div>
-              <div className="stat-value">{stats.activeClasses}</div>
-              <div className="stat-trend positive">↑ 12% from last month</div>
-            </div>
-            <div className="td-stat-card">
-              <div className="stat-header">
-                <span className="stat-label">Pending Reviews</span>
-                <span className="stat-icon-bg orange">🕒</span>
-              </div>
-              <div className="stat-value">{stats.pendingSubmissions}</div>
-              <div className="stat-trend warning">Action required</div>
-            </div>
-            <div className="td-stat-card">
-              <div className="stat-header">
-                <span className="stat-label">Papers Graded</span>
-                <span className="stat-icon-bg green">✅</span>
-              </div>
-              <div className="stat-value">{stats.papersGraded}</div>
-              <div className="stat-trend positive">↑ 24% this week</div>
+        {/* Stats Bar (Vision Layout) */}
+        <div className="td-stats-grid">
+          <div className="td-stat-card">
+            <div className="td-stat-icon purple">🏫</div>
+            <div className="td-stat-info">
+              <span className="stat-label">Active Classes</span>
+              <span className="stat-value">{activeClasses}</span>
             </div>
           </div>
-
-        <h2 className="td-section-title">Your Classes</h2>
-        <div className="td-content-grid">
-          {classes.map(cls => (
-            <div key={cls.id} className="td-glass-card">
-              <div className="td-card-header">
-                <h3 className="td-card-title">{cls.name}</h3>
-                <span className="td-badge primary">{cls.invite_code}</span>
-              </div>
-              <div className="td-card-body">
-                <p style={{ marginBottom: '12px' }}><strong>0</strong> Students Enrolled</p>
-                
-                {/* Assignments List */}
-                <div className="td-assignments-section" style={{ marginTop: '16px', marginBottom: '20px' }}>
-                  <h4 style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assignments</h4>
-                  <div className="td-assignments-stack" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {cls.assignments && cls.assignments.length > 0 ? (
-                      cls.assignments.map(asg => (
-                        <div key={asg.id} className="td-assignment-item" style={{ 
-                          padding: '10px 14px', 
-                          background: 'rgba(255, 255, 255, 0.5)', 
-                          borderRadius: '10px',
-                          border: '1px solid rgba(226, 232, 240, 0.8)',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center'
-                        }}>
-                          <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{asg.title}</span>
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                            {asg.due_date ? new Date(asg.due_date).toLocaleDateString() : 'No deadline'}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
-                        No assignments created.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress Bar for Grading Status */}
-                <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `0%`, height: '100%', background: '#1000f3', transition: 'width 0.5s ease' }}></div>
-                </div>
-                <p style={{ fontSize: '0.8rem', marginTop: '8px', textAlign: 'right' }}>
-                  0% Graded
-                </p>
-              </div>
-              <button className="td-action-btn secondary" onClick={() => openCreateAssignment(cls.id)}>
-                + Add Assignment
-              </button>
+          <div className="td-stat-card">
+            <div className="td-stat-icon blue">👥</div>
+            <div className="td-stat-info">
+              <span className="stat-label">Total Students</span>
+              <span className="stat-value">{totalStudents}</span>
             </div>
-          ))}
-          
-          {/* Empty State / Add New Card */}
-          <div className="td-glass-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', background: 'transparent' }}>
-            <div style={{ fontSize: '3rem', color: '#cbd5e1', marginBottom: '16px' }}>+</div>
-            <h3 className="td-card-title" style={{ color: '#64748b' }}>Create New Class</h3>
-            <p className="td-card-body" style={{ textAlign: 'center', margin: '12px 0' }}>Generate an invite code and start grading.</p>
-            <button className="td-action-btn" style={{ width: 'auto' }} onClick={() => setIsClassModalOpen(true)}>Create Class</button>
+          </div>
+          <div className="td-stat-card">
+            <div className="td-stat-icon orange">📈</div>
+            <div className="td-stat-info">
+              <span className="stat-label">Grading Progress</span>
+              <span className="stat-value">{gradingProgress}</span>
+            </div>
           </div>
         </div>
 
-        <CreateClassModal 
-          isOpen={isClassModalOpen} 
-          onClose={() => setIsClassModalOpen(false)} 
-          onClassCreated={handleClassCreated}
-          teacherId={profile?.id}
-        />
+        {/* Main Dashboard Content Grid (Vision Layout) */}
+        <div className="td-content-grid">
+          {/* Left: Upcoming Deadlines (Matching Vision Prompt) */}
+          <div className="td-glass-card">
+            <div className="td-card-header">
+              <h3>Upcoming Deadlines</h3>
+              <Link to="#" style={{ fontSize: '14px', color: 'var(--td-primary)', fontWeight: 700 }}>View All</Link>
+            </div>
+            
+            <div className="td-table-container">
+              <table className="td-table">
+                <thead>
+                  <tr>
+                    <th>ASSIGNMENT</th>
+                    <th>CLASS</th>
+                    <th>DUE DATE</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {upcomingAssignments.map(asg => (
+                    <tr key={asg.id}>
+                      <td><div style={{ fontWeight: 700 }}>{asg.title}</div></td>
+                      <td>{asg.className}</td>
+                      <td>{new Date(asg.due_date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</td>
+                      <td>
+                        <span style={{ 
+                          padding: '4px 10px', 
+                          borderRadius: '8px', 
+                          fontSize: '11px', 
+                          fontWeight: 700,
+                          background: '#fef3c7',
+                          color: '#d97706'
+                        }}>
+                          Pending
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {upcomingAssignments.length === 0 && (
+                    <tr>
+                      <td colSpan="4" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                        No upcoming deadlines found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
+          {/* Right: Analytics Overview (Matching Vision Prompt) */}
+          <div className="td-glass-card">
+            <div className="td-card-header">
+              <h3>Performance Analytics</h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981' }}>+12% vs last month</span>
+              </div>
+            </div>
+            
+            <div className="td-chart-placeholder">
+              {/* CSS-based Mock Chart with Vibrant Gradients from Vision */}
+              <div className="td-chart-bar-wrapper">
+                <div className="td-chart-bar" style={{ height: '70%', background: 'linear-gradient(180deg, #8b5cf6, #c084fc)' }}>
+                  <span className="td-chart-value">84%</span>
+                </div>
+                <span className="td-chart-label">Math</span>
+              </div>
+              <div className="td-chart-bar-wrapper">
+                <div className="td-chart-bar" style={{ height: '90%', background: 'linear-gradient(180deg, #3b82f6, #60a5fa)' }}>
+                  <span className="td-chart-value">92%</span>
+                </div>
+                <span className="td-chart-label">Physics</span>
+              </div>
+              <div className="td-chart-bar-wrapper">
+                <div className="td-chart-bar" style={{ height: '60%', background: 'linear-gradient(180deg, #10b981, #34d399)' }}>
+                  <span className="td-chart-value">78%</span>
+                </div>
+                <span className="td-chart-label">Chem</span>
+              </div>
+              <div className="td-chart-bar-wrapper">
+                <div className="td-chart-bar" style={{ height: '85%', background: 'linear-gradient(180deg, #f59e0b, #fbbf24)' }}>
+                  <span className="td-chart-value">88%</span>
+                </div>
+                <span className="td-chart-label">Bio</span>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-around' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '20px', fontWeight: 800 }}>142</div>
+                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>SUBMISSIONS</div>
+              </div>
+              <div style={{ borderLeft: '1px solid #e2e8f0' }}></div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '20px', fontWeight: 800 }}>86%</div>
+                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>AVG SCORE</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Modals */}
+      {isClassModalOpen && (
+        <CreateClassModal 
+          isOpen={isClassModalOpen}
+          onClose={() => setIsClassModalOpen(false)}
+          teacherId={profile?.id}
+          onClassCreated={() => fetchData(profile.id)}
+        />
+      )}
+
+      {isAssignmentModalOpen && (
         <CreateAssignmentModal
           isOpen={isAssignmentModalOpen}
           onClose={() => setIsAssignmentModalOpen(false)}
           classId={selectedClassId}
-          onAssignmentCreated={handleAssignmentCreated}
+          onAssignmentCreated={() => fetchData(profile.id)}
         />
-      </main>
-    </div>
+      )}
     </div>
   );
 }

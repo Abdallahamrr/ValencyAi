@@ -102,6 +102,7 @@
   font-size: 15px;
   font-weight: 700;
   margin-bottom: 4px;
+  overflow-wrap: anywhere;
 }
 
 .sc-class-info span {
@@ -129,6 +130,27 @@
   margin-bottom: 24px;
 }
 
+.sc-submission-notice {
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin: -18px 0 24px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.sc-submission-notice.success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.sc-submission-notice.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
 .sc-asg-main-card {
   background: white;
   border-radius: 20px;
@@ -137,26 +159,88 @@
   margin-bottom: 32px;
 }
 
+.sc-active-list .sc-asg-main-card {
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
 .sc-asg-header {
-  padding: 24px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 16px 24px;
+  border-bottom: 0;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: 16px;
+}
+
+.sc-asg-main-card.expanded .sc-asg-header {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.sc-asg-toggle {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.sc-asg-toggle:hover {
+  background: #fafafa;
+}
+
+.sc-asg-toggle:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: -2px;
+}
+
+.sc-asg-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.sc-expand-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .sc-asg-title-box h3 {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
   color: #1e293b;
-  margin-bottom: 8px;
+  margin-bottom: 2px;
+  overflow-wrap: anywhere;
 }
 
 .sc-asg-meta {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
   font-size: 13px;
   color: #64748b;
+}
+
+.sc-asg-meta a {
+  color: #7c3aed;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.sc-asg-meta a:hover {
+  text-decoration: underline;
 }
 
 .sc-status-badge {
@@ -191,6 +275,12 @@
   background: #f5f3ff;
 }
 
+.sc-upload-area.uploading {
+  cursor: progress;
+  border-color: #a78bfa;
+  background: #faf5ff;
+}
+
 .sc-upload-icon {
   width: 48px;
   height: 48px;
@@ -213,6 +303,32 @@
 .sc-upload-area p {
   font-size: 13px;
   color: #94a3b8;
+}
+
+.sc-upload-progress {
+  margin: 18px auto 0;
+  max-width: 360px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6d28d9;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sc-upload-progress-track {
+  flex: 1;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ede9fe;
+}
+
+.sc-upload-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+  transition: width 0.25s ease;
 }
 
 /* ── Past Assignments ── */
@@ -267,3 +383,208 @@
 
 .badge-awaiting { background: #fef3c7; color: #d97706; }
 .badge-graded { background: #f0fdf4; color: #166534; }
+
+@media (max-width: 1100px) {
+  .sc-grid {
+    grid-template-columns: 300px 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 900px) {
+  .sc-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .sc-left-col {
+    gap: 18px;
+  }
+
+  .sc-class-list {
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .sc-class-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sc-class-list-header {
+    margin-bottom: 10px;
+  }
+
+  .sc-class-card {
+    min-width: 260px;
+  }
+}
+
+@media (max-width: 640px) {
+  .sc-grid {
+    gap: 20px;
+  }
+
+  .sc-enroll-card {
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .sc-enroll-form {
+    flex-direction: column;
+  }
+
+  .sc-input,
+  .sc-btn-join {
+    width: 100%;
+  }
+
+  .sc-class-list {
+    display: flex;
+    gap: 10px;
+    margin: 0 -16px;
+    padding: 0 16px 4px;
+  }
+
+  .sc-class-list-header {
+    display: none;
+  }
+
+  .sc-class-card {
+    min-width: 220px;
+    margin-bottom: 0;
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .sc-class-info h4 {
+    font-size: 14px;
+  }
+
+  .sc-class-info span {
+    font-size: 12px;
+  }
+
+  .sc-right-header h2 {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .sc-submission-notice {
+    margin: -10px 0 18px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .sc-asg-main-card,
+  .sc-active-list .sc-asg-main-card,
+  .sc-past-item {
+    border-radius: 14px;
+  }
+
+  .sc-asg-header {
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .sc-asg-title-box {
+    min-width: 0;
+  }
+
+  .sc-asg-meta {
+    gap: 8px;
+    flex-direction: column;
+    font-size: 12px;
+  }
+
+  .sc-asg-actions {
+    gap: 8px;
+  }
+
+  .sc-status-badge {
+    display: none;
+  }
+
+  .sc-asg-description {
+    padding: 16px;
+    font-size: 13px;
+  }
+
+  .sc-upload-area {
+    margin: 0 16px 16px;
+    padding: 28px 16px;
+    border-radius: 14px;
+  }
+
+  .sc-upload-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  .sc-upload-area h4 {
+    font-size: 14px;
+  }
+
+  .sc-upload-progress {
+    max-width: none;
+    gap: 8px;
+  }
+
+  .sc-past-header {
+    margin-top: 6px;
+  }
+
+  .sc-past-item {
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .sc-past-info {
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .sc-past-text {
+    min-width: 0;
+  }
+
+  .sc-past-text h5 {
+    overflow-wrap: anywhere;
+  }
+
+  .sc-past-badge {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .sc-class-list {
+    margin: 0 -12px;
+    padding-inline: 12px;
+  }
+
+  .sc-class-card {
+    min-width: 200px;
+  }
+
+  .sc-asg-header {
+    gap: 10px;
+  }
+
+  .sc-expand-icon {
+    width: 22px;
+    height: 22px;
+    font-size: 16px;
+  }
+
+  .sc-past-item {
+    flex-direction: column;
+  }
+
+  .sc-past-badge {
+    align-self: flex-start;
+  }
+}

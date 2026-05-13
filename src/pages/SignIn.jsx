@@ -19,10 +19,10 @@ export default function SignIn() {
   };
 
   const handleGoogleLogin = async (role) => {
-    localStorage.clear(); 
+    localStorage.clear();
     await supabase.auth.signOut();
     localStorage.setItem('pendingRole', role);
-    
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -55,9 +55,8 @@ export default function SignIn() {
   return (
     <div className="auth-container">
       {/* Header Logo */}
-      <div className="auth-header" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-        <div className="logo-v-box">V</div>
-        <h1>Valency<span>.Ai</span></h1>
+      <div className="auth-header" onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '40px' }}>
+        <img src="/favicon.svg" alt="Valency.Ai" style={{ width: '320px', height: 'auto' }} />
       </div>
 
       <div className="auth-card-main">
@@ -66,7 +65,7 @@ export default function SignIn() {
 
         <span className="role-selection-label">SIGN IN AS...</span>
         <div className="role-selector-group">
-          <div 
+          <div
             className={`role-option ${activeRole === 'student' ? 'active' : ''}`}
             onClick={() => setActiveRole('student')}
           >
@@ -74,7 +73,7 @@ export default function SignIn() {
             <span className="role-option-icon">🎓</span>
             <span>Student</span>
           </div>
-          <div 
+          <div
             className={`role-option ${activeRole === 'teacher' ? 'active' : ''}`}
             onClick={() => setActiveRole('teacher')}
           >
@@ -84,10 +83,10 @@ export default function SignIn() {
           </div>
         </div>
 
-        <RoleCard 
+        <RoleCard
           role={activeRole}
-          description={activeRole === 'teacher' ? 
-            "Access your classes and grade assignments." : 
+          description={activeRole === 'teacher' ?
+            "Access your classes and grade assignments." :
             "Submit assignments and view your grades."}
           email={emails[activeRole]}
           setEmail={(val) => handleEmailChange(activeRole, val)}

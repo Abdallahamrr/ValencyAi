@@ -16,12 +16,12 @@ function Background() {
 
   return (
     <div className="bg-mesh" aria-hidden="true">
-      <div 
-        className="cursor-glow" 
-        style={{ 
-          left: `${mousePos.x}px`, 
-          top: `${mousePos.y}px` 
-        }} 
+      <div
+        className="cursor-glow"
+        style={{
+          left: `${mousePos.x}px`,
+          top: `${mousePos.y}px`
+        }}
       />
       <div className="mesh-blob blob-1" />
       <div className="mesh-blob blob-2" />
@@ -57,13 +57,8 @@ export default function LandingPage() {
 
       {/* ── NAV ── */}
       <nav className="lp-nav">
-        <div className="lp-nav-logo" onClick={() => navigate('/')}>
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <path d="M16 4L4 10L16 16L28 10L16 4Z" fill="#8B5CF6" />
-            <path d="M4 22L16 28L28 22" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M4 16L16 22L28 16" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span className="logo-text">Valency.Ai</span>
+        <div className="lp-nav-logo" onClick={() => navigate('/')} style={{ display: 'flex', alignItems: 'center' }}>
+          <img src="/logo-light.svg" alt="Valency.Ai" style={{ width: '220px', height: 'auto' }} />
         </div>
         <div className="lp-nav-links">
           <a href="#features">Features</a>
@@ -88,8 +83,8 @@ export default function LandingPage() {
             <span className="gradient-text">Trust with Verification.</span>
           </h1>
           <p className="hero-sub reveal">
-            Valency AI bridges the gap between manual grading and AI efficiency. 
-            Verify handwriting OCR before the AI grades. Specifically optimized for 
+            Valency AI bridges the gap between manual grading and AI efficiency.
+            Verify handwriting OCR before the AI grades. Specifically optimized for
             Chemistry and Math.
           </p>
           <div className="hero-actions reveal">
@@ -106,18 +101,18 @@ export default function LandingPage() {
           </div>
 
           <div className="hero-visual reveal">
-             <div className="visual-mockup">
-                <img 
-                  src="/valency_hero_dashboard_1778544518723.png" 
-                  alt="Valency AI Dashboard" 
-                  className="hero-img"
-                />
-             </div>
+            <div className="visual-mockup">
+              <img
+                src="/valency_hero_dashboard_1778544518723.png"
+                alt="Valency AI Dashboard"
+                className="hero-img"
+              />
+            </div>
           </div>
         </div>
       </section>
 
-      
+
 
       {/* ── WORKFLOW ── */}
       <section className="lp-workflow" id="how">
@@ -281,15 +276,11 @@ export default function LandingPage() {
       {/* ── FOOTER ── */}
       <footer className="lp-footer">
         <div className="footer-left">
-          <div className="lp-nav-logo">
-            <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-              <path d="M16 4L4 10L16 16L28 10L16 4Z" fill="#8B5CF6" />
-              <path d="M4 22L16 28L28 22" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="logo-text">Valency.Ai</span>
+          <div className="lp-nav-logo" style={{ marginBottom: '20px' }}>
+            <img src="/logo-light.svg" alt="Valency.Ai" style={{ width: '180px', height: 'auto' }} />
           </div>
         </div>
-        
+
         <div className="footer-center">
           <div className="footer-links">
             <a href="#">Privacy</a>

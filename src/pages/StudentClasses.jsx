@@ -13,6 +13,10 @@ export default function StudentClasses() {
   const [enrolledClasses, setEnrolledClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [submissions, setSubmissions] = useState([]);
+  const [expandedAssignmentIds, setExpandedAssignmentIds] = useState([]);
+  const [uploadingAssignmentId, setUploadingAssignmentId] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [submissionNotice, setSubmissionNotice] = useState(null);
   
   // State for Enrollment
   const [inviteCode, setInviteCode] = useState('');
@@ -87,43 +91,129 @@ export default function StudentClasses() {
   };
 
   const handleFileUpload = async (e, assignmentId) => {
+    if (uploadingAssignmentId) return;
+
     const file = e.target.files[0];
     if (!file) return;
-    setLoading(true);
+
+    setUploadingAssignmentId(assignmentId);
+    setUploadProgress(1);
+    setSubmissionNotice(null);
+
+    let currentProgress = 1;
+    const simulationInterval = setInterval(() => {
+      if (currentProgress < 92) {
+        currentProgress += Math.random() * 4;
+        setUploadProgress(Math.floor(currentProgress));
+      }
+    }, 500);
+
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${profile.id}/${assignmentId}_${Date.now()}.${fileExt}`;
-      const { data: uploadData } = await supabase.storage.from('student-submissions').upload(fileName, file);
+      const { error: uploadError } = await supabase.storage
+        .from('student-submissions')
+        .upload(fileName, file, {
+          onUploadProgress: (evt) => {
+            if (evt.total) {
+              const realPercent = Math.round((evt.loaded / evt.total) * 100);
+              if (realPercent > currentProgress) {
+                currentProgress = realPercent;
+                setUploadProgress(realPercent);
+              }
+            }
+          }
+        });
+
+      if (uploadError) throw uploadError;
+
       const { data: { publicUrl } } = supabase.storage.from('student-submissions').getPublicUrl(fileName);
 
-      await supabase.from('submissions').insert({
+      const { error: insertError } = await supabase.from('submissions').insert({
         assignment_id: assignmentId,
         student_id: profile.id,
         pdf_url: publicUrl,
         status: 'pending'
       });
-      alert("Submission successful!");
+
+      if (insertError) throw insertError;
+
+      clearInterval(simulationInterval);
+      setUploadProgress(100);
+      setSubmissionNotice({ type: 'success', text: 'Assignment submitted successfully.' });
+      e.target.value = '';
+
+      await new Promise(resolve => setTimeout(resolve, 700));
       await fetchData(profile.id);
     } catch (err) {
-      alert("Upload error: " + err.message);
+      clearInterval(simulationInterval);
+      setSubmissionNotice({ type: 'error', text: `Upload error: ${err.message}` });
+      e.target.value = '';
     } finally {
-      setLoading(false);
+      setUploadingAssignmentId(null);
+      setUploadProgress(0);
     }
   };
 
-  const selectedClass = enrolledClasses.find(c => c.id === selectedClassId);
-  const activeAssignment = selectedClass?.assignments?.find(asg => !submissions.find(s => s.assignment_id === asg.id));
-  const pastAssignments = selectedClass?.assignments?.filter(asg => submissions.find(s => s.assignment_id === asg.id)) || [];
+  const formatDueDate = (dueDate) => {
+    if (!dueDate) return { relative: 'No due date', absolute: '' };
+    
+    const due = new Date(dueDate);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+    
+    const diffTime = dueDay - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let relative = '';
+    if (diffDays === 0) relative = 'Today';
+    else if (diffDays === 1) relative = 'Tomorrow';
+    else if (diffDays > 1) relative = `In ${diffDays} days`;
+    else if (diffDays === -1) relative = 'Yesterday';
+    else relative = `${Math.abs(diffDays)} days ago`;
+    
+    const hours = due.getHours().toString().padStart(2, '0');
+    const minutes = due.getMinutes().toString().padStart(2, '0');
+    const date = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const absolute = `${date} at ${hours}:${minutes}`;
+    
+    return { relative, absolute };
+  };
 
-  if (loading) return <div className="sd-layout" style={{ justifyContent: 'center', alignItems: 'center' }}>Loading...</div>;
+  const getQuestionPdfUrl = (assignment) => {
+    const questionPdf = assignment?.question_pdf_url;
+    if (!questionPdf) return null;
+
+    if (/^https?:\/\//i.test(questionPdf)) {
+      return questionPdf;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('assignment_questions')
+      .getPublicUrl(questionPdf);
+
+    return publicUrl;
+  };
+
+  const toggleAssignment = (assignmentId) => {
+    setExpandedAssignmentIds(current =>
+      current.includes(assignmentId)
+        ? current.filter(id => id !== assignmentId)
+        : [...current, assignmentId]
+    );
+  };
+
+  const selectedClass = enrolledClasses.find(c => c.id === selectedClassId);
+  const activeAssignments = selectedClass?.assignments?.filter(asg => !submissions.find(s => s.assignment_id === asg.id)) || [];
+  const pastAssignments = selectedClass?.assignments?.filter(asg => submissions.find(s => s.assignment_id === asg.id)) || [];
 
   return (
     <div className="sd-layout">
       {/* ── SIDEBAR ── */}
       <aside className="sd-sidebar">
-        <div className="sd-sidebar-logo">
-           <div className="logo-v-box">V</div>
-           <h1 style={{ color: 'white' }}>Valency.Ai</h1>
+        <div className="sd-sidebar-logo" onClick={() => navigate('/student-dashboard')} style={{ cursor: 'pointer' }}>
+           <img src="/logo-light.svg" alt="Valency.Ai" style={{ width: '100%', maxWidth: '220px', height: 'auto', display: 'block' }} />
         </div>
         <div className="sd-user-card">
           <span className="role">Student</span>
@@ -146,6 +236,12 @@ export default function StudentClasses() {
           <h2>My Classes & Assignments</h2>
           <p>Manage your enrolled classes and submit new assignments.</p>
         </header>
+
+        {submissionNotice && (
+          <div className={`sc-submission-notice ${submissionNotice.type}`} role="status">
+            {submissionNotice.text}
+          </div>
+        )}
 
         <div className="sc-grid">
           {/* Left Column */}
@@ -182,28 +278,73 @@ export default function StudentClasses() {
                   <h2>{selectedClass.name} Assignments</h2>
                 </div>
 
-                {activeAssignment ? (
-                  <div className="sc-asg-main-card">
-                    <div className="sc-asg-header">
+                {activeAssignments.length > 0 ? (
+                  <div className="sc-active-list">
+                    {activeAssignments.map(assignment => {
+                      const dueDate = formatDueDate(assignment.due_date);
+                      const questionPdfUrl = getQuestionPdfUrl(assignment);
+                      const isExpanded = expandedAssignmentIds.includes(assignment.id);
+                      const isUploading = uploadingAssignmentId === assignment.id;
+                      const isUploadLocked = Boolean(uploadingAssignmentId);
+
+                      return (
+                        <div className={`sc-asg-main-card ${isExpanded ? 'expanded' : ''}`} key={assignment.id}>
+                    <div
+                      className="sc-asg-header sc-asg-toggle"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => toggleAssignment(assignment.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          toggleAssignment(assignment.id);
+                        }
+                      }}
+                      aria-expanded={isExpanded}
+                    >
                       <div className="sc-asg-title-box">
-                        <h3>{activeAssignment.title}</h3>
+                        <h3>{assignment.title}</h3>
                         <div className="sc-asg-meta">
-                          <span>🕒 Due: Tomorrow, 23:59</span>
-                          <span>📄 2 Pages</span>
+                          <span>🕒 Due: {dueDate.relative}{dueDate.absolute ? `, ${dueDate.absolute}` : ''}</span>
+                          {questionPdfUrl ? (
+                            <a href={questionPdfUrl} download target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+                              📄 Download questions PDF
+                            </a>
+                          ) : (
+                            <span>📄 Questions PDF unavailable</span>
+                          )}
                         </div>
                       </div>
-                      <span className="sc-status-badge">Open</span>
+                      <div className="sc-asg-actions">
+                        <span className="sc-status-badge">Open</span>
+                        <span className="sc-expand-icon">{isExpanded ? '-' : '+'}</span>
+                      </div>
                     </div>
+                    {isExpanded && (
+                      <>
                     <div className="sc-asg-description">
-                      {activeAssignment.description || "Please complete the worksheet, scan your handwritten answers as a PDF, and upload it here. Ensure your handwriting is legible."}
+                      {assignment.description || "Please complete the worksheet, scan your handwritten answers as a PDF, and upload it here. Ensure your handwriting is legible."}
                     </div>
                     
-                    <div className="sc-upload-area">
-                      <input type="file" accept=".pdf" onChange={(e) => handleFileUpload(e, activeAssignment.id)} style={{ position: 'absolute', opacity: 0, inset: 0, cursor: 'pointer' }} />
+                    <div className={`sc-upload-area ${isUploading ? 'uploading' : ''}`}>
+                      <input type="file" accept=".pdf" disabled={isUploadLocked} onChange={(e) => handleFileUpload(e, assignment.id)} style={{ position: 'absolute', opacity: 0, inset: 0, cursor: isUploadLocked ? 'not-allowed' : 'pointer' }} />
                       <div className="sc-upload-icon">☁️</div>
-                      <h4>Click or drag PDF to upload</h4>
-                      <p>Maximum file size 10MB.</p>
+                      <h4>{isUploading ? 'Uploading your PDF...' : 'Click or drag PDF to upload'}</h4>
+                      <p>{isUploading ? 'Please keep this page open.' : 'Maximum file size 10MB.'}</p>
+                      {isUploading && (
+                        <div className="sc-upload-progress" aria-label={`Upload progress ${uploadProgress}%`}>
+                          <div className="sc-upload-progress-track">
+                            <div className="sc-upload-progress-bar" style={{ width: `${uploadProgress}%` }}></div>
+                          </div>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                      )}
                     </div>
+                      </>
+                    )}
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p style={{ color: '#64748b', marginBottom: '32px' }}>No active assignments for this class.</p>
