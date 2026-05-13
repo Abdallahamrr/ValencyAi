@@ -27,13 +27,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 24px;
   background: var(--auth-bg);
   color: var(--auth-text);
   font-family: var(--auth-font-main);
   position: relative;
-  overflow: hidden;
-  padding: 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: clamp(24px, 5vh, 48px) 20px 40px;
 }
 
 /* Faint Grid Background */
@@ -49,13 +51,21 @@
 }
 
 .auth-header {
-  position: absolute;
-  top: 40px;
-  left: 40px;
+  position: relative;
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 12px;
-  margin-bottom: 0;
+  width: 100%;
+  z-index: 2;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.auth-logo {
+  display: block;
+  width: min(260px, 72vw);
+  height: auto;
 }
 
 .auth-header h1 {

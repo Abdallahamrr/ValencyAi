@@ -55,8 +55,8 @@ export default function SignIn() {
   return (
     <div className="auth-container">
       {/* Header Logo */}
-      <div className="auth-header" onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '40px' }}>
-        <img src="/favicon.svg" alt="Valency.Ai" style={{ width: '320px', height: 'auto' }} />
+      <div className="auth-header" onClick={() => navigate('/')}>
+        <img className="auth-logo" src="/logo-light.svg" alt="Valency.Ai" />
       </div>
 
       <div className="auth-card-main">
