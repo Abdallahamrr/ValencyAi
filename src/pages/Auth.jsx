@@ -56,7 +56,7 @@ export default function Auth() {
     <div className="auth-container">
       {/* Header Logo */}
       <div className="auth-header" onClick={() => navigate('/')}>
-        <img className="auth-logo" src="/logo-light.svg" alt="Valency.Ai" />
+        <img className="auth-logo" src="/logo-light.svg"  alt="Valency.Ai" />
       </div>
 
       <div className="auth-card-main">
