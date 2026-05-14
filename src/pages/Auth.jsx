@@ -105,9 +105,7 @@ export default function Auth() {
         </div>
       </div>
 
-      <div className="replit-badge">
-        <span>Made with Replit</span>
-      </div>
+      
     </div>
   );
 }

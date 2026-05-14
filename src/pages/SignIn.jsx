@@ -105,9 +105,6 @@ export default function SignIn() {
         </div>
       </div>
 
-      <div className="replit-badge">
-        <span>Made with Replit</span>
-      </div>
     </div>
   );
 }
